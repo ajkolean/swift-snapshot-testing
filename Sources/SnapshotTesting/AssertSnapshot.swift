@@ -475,13 +475,47 @@ public func verifySnapshot<Value, Format>(
           if isSwiftTesting {
             #if canImport(Testing) && compiler(>=6.2)
               if Test.current != nil {
+                // Record snapshot diff attachments for Swift Testing
+                // We need to convert images to data since XCTAttachment doesn't expose the image data
                 for attachment in attachments {
-                  if let userInfo = attachment.userInfo,
-                    let imageData = userInfo["imageData"] as? Data
-                  {
+                  var attachmentData: Data?
+                  var attachmentName: String? = attachment.name
+
+                  // Determine which data to use based on attachment name
+                  switch attachment.name {
+                  case "reference":
+                    // Use the reference image data
+                    attachmentData = snapshotting.diffing.toData(reference)
+                  case "failure":
+                    // Use the diffable (failed) image data
+                    attachmentData = snapshotting.diffing.toData(diffable)
+                  case "difference":
+                    // For difference images, recreate it using the diff function
+                    #if os(macOS)
+                      if let oldImage = reference as? NSImage, let newImage = diffable as? NSImage {
+                        attachmentData = SnapshotTesting.NSImagePNGRepresentation(
+                          SnapshotTesting.diff(oldImage, newImage))
+                      }
+                    #elseif os(iOS) || os(tvOS)
+                      if let oldImage = reference as? UIImage, let newImage = diffable as? UIImage {
+                        attachmentData = SnapshotTesting.diff(oldImage, newImage).pngData()
+                      }
+                    #endif
+                  default:
+                    // For other attachments (like string diffs), recreate the diff
+                    // This handles patch files and other non-image attachments
+                    if let (diffMessage, _) = snapshotting.diffing.diff(reference, diffable) {
+                      attachmentData = Data(diffMessage.utf8)
+                      if attachmentName == nil {
+                        attachmentName = "difference.patch"
+                      }
+                    }
+                  }
+
+                  if let attachmentData = attachmentData {
                     STAttachments.record(
-                      imageData,
-                      named: attachment.name,
+                      attachmentData,
+                      named: attachmentName,
                       fileID: fileID,
                       filePath: filePath,
                       line: line,
