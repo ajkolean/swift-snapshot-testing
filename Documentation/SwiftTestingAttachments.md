@@ -30,10 +30,12 @@ One attachment is created:
 
 ## Implementation details
 
-The implementation uses XCTAttachment's userInfo to store image data:
-- When running under Swift Testing, it extracts the image data from userInfo and records it via `STAttachments.record()`
+The implementation recreates attachment data from the original source values:
+- `XCTAttachment` doesn't expose its internal data (userInfo is always nil), so we recreate it from the snapshot's reference and diffable values
+- For image attachments, we call `snapshotting.diffing.toData()` on the reference/failure values
+- For difference images, we regenerate the visual diff using the internal `diff()` functions
 - When running under XCTest, it uses the traditional `XCTAttachment` approach
-- This ensures backward compatibility while adding new functionality
+- This ensures backward compatibility while adding Swift Testing support
 
 ## Viewing Attachments
 

@@ -484,26 +484,28 @@ public func verifySnapshot<Value, Format>(
                   switch attachment.name {
                   case "reference":
                     attachmentData = snapshotting.diffing.toData(reference)
+                    attachmentName = "reference.\(snapshotting.pathExtension ?? "data")"
                   case "failure":
                     attachmentData = snapshotting.diffing.toData(diffable)
+                    attachmentName = "failure.\(snapshotting.pathExtension ?? "data")"
                   case "difference":
                     #if os(macOS)
                       if let oldImage = reference as? NSImage, let newImage = diffable as? NSImage {
                         attachmentData = SnapshotTesting.NSImagePNGRepresentation(
                           SnapshotTesting.diff(oldImage, newImage))
+                        attachmentName = "difference.\(snapshotting.pathExtension ?? "png")"
                       }
                     #elseif os(iOS) || os(tvOS)
                       if let oldImage = reference as? UIImage, let newImage = diffable as? UIImage {
                         attachmentData = SnapshotTesting.diff(oldImage, newImage).pngData()
+                        attachmentName = "difference.\(snapshotting.pathExtension ?? "png")"
                       }
                     #endif
                   default:
                     // String diffs and other non-image attachments.
-                    if let (diffMessage, _) = snapshotting.diffing.diff(reference, diffable) {
-                      attachmentData = Data(diffMessage.utf8)
-                      if attachmentName == nil {
-                        attachmentName = "difference.patch"
-                      }
+                    attachmentData = Data(failure.utf8)
+                    if attachmentName == nil {
+                      attachmentName = "difference.patch"
                     }
                   }
 
