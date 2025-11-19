@@ -28,21 +28,16 @@
             """
           }
         } matching: { issue in
-          var issuePrefix = "Issue recorded"
-          #if compiler(>=6.2)
-            // Swift 6.2+ changed the error message format
-            issuePrefix += " (error)"
-          #endif
-
-          return issue.description == """
-            \(issuePrefix): Snapshot did not match. Difference: …
+          issue.description.hasSuffix(
+            """
+            Snapshot did not match. Difference: …
 
               @@ −1,3 +1,4 @@
                ▿ 2 elements
                  - "Hello"
               +  - "World"
                
-            """
+            """)
         }
       }
 
